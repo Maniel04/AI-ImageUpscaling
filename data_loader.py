@@ -14,7 +14,7 @@ class SRDataset(Dataset):
         return len(self.nume_fisiere)
 
     def __getitem__(self, index):
-        # 1. Citim imaginea originală (High-Res) - Aceasta este "Eticheta" (Target)
+        # 1. Citim imaginea originală (High-Res)
         imagine_hr = cv2.imread(self.nume_fisiere[index])
         imagine_hr = cv2.cvtColor(imagine_hr, cv2.COLOR_BGR2RGB)
 
@@ -26,8 +26,7 @@ class SRDataset(Dataset):
         # Pentru modelul SRCNN, intrarea trebuie să fie mărită la loc (dar blurată)
         imagine_lr_srcnn = cv2.resize(imagine_lr, (w, h), interpolation=cv2.INTER_CUBIC)
 
-        # 3. Transformăm în Tensori (formatul cerut de Deep Learning)
-        # Permutăm din (H, W, C) în (C, H, W) și normalizăm la [0, 1]
+        # 3. Transformăm în Tensori
         hr_tensor = torch.from_numpy(imagine_hr).permute(2, 0, 1).float() / 255.0
         lr_tensor = torch.from_numpy(imagine_lr_srcnn).permute(2, 0, 1).float() / 255.0
 

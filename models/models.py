@@ -30,7 +30,7 @@ class ESPCN(nn.Module):
         # Ultimul strat pregătește pixelii pentru "amestecare" (Pixel Shuffle)
         self.conv3 = nn.Conv2d(32, 3 * (scale_factor ** 2), kernel_size=3, padding=1)
         self.pixel_shuffle = nn.PixelShuffle(scale_factor)
-        self.relu = nn.Tanh() # ESPCN folosește adesea Tanh sau ReLU
+        self.relu = nn.Tanh()
 
     def forward(self, x):
         x = self.relu(self.conv1(x))
