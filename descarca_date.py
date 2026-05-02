@@ -2,15 +2,16 @@ import os
 import requests
 
 
-def descarca_poze(numar_poze=100, folder_destinatie="data/set_extins"):
-    # 1. Creăm folderul dacă nu există
+def descarca_poze(numar_poze=1000, folder_destinatie="data/Set_1000"):
+    # Creăm folderul dacă nu există
     if not os.path.exists(folder_destinatie):
         os.makedirs(folder_destinatie)
         print(f"📁 Folderul '{folder_destinatie}' a fost creat.")
 
     print(f"🚀 Începem descărcarea a {numar_poze} poze (rezoluție 960x960)...")
+    print("Așteaptă, procesul va dura câteva minute în funcție de viteza de internet.\n")
 
-    # 2. Descărcăm pozele pe rând
+    # Descărcăm pozele pe rând
     for i in range(1, numar_poze + 1):
         # Folosim 960x960 - dimensiunea perfect divizibilă cu 3 pentru ESPCN
         url = f"https://picsum.photos/960/960?random={i}"
@@ -25,12 +26,14 @@ def descarca_poze(numar_poze=100, folder_destinatie="data/set_extins"):
             with open(nume_fisier, 'wb') as f:
                 f.write(raspuns.content)
 
-            print(f"✅ Descărcat: {nume_fisier}")
+            # Afișăm progresul din 50 în 50 de poze pentru a nu bloca terminalul
+            if i % 50 == 0 or i == numar_poze:
+                print(f"✅ Descărcate: {i} / {numar_poze} poze")
 
         except Exception as e:
             print(f"❌ Eroare la descărcarea pozei {i}: {e}")
 
-    print("\n🎉 Gata! Baza ta de date este completă și pregătită.")
+    print("\n🎉 Gata! Baza ta de date uriașă este completă și pregătită pentru noaptea asta.")
 
 
 # Pornim funcția

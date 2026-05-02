@@ -7,45 +7,44 @@ from data_loader import SRDataset
 from models.models import SRCNN, ESPCN
 
 print("=========================================")
-print("🤖 Meniu Antrenament AI (Super-Rezoluție)")
+print("🌙 Meniu Antrenament AI - NIGHT RIDER")
 print("=========================================")
 
-# 1. Alegem Modelul
-print("Ce model vrei să antrenezi?")
+print("Ce model vrei să antrenezi peste noapte?")
 print("1. SRCNN (Algoritmul Vechi)")
 print("2. ESPCN (Algoritmul Modern)")
 alegere_model = input("👉 Introdu 1 sau 2: ")
 
-# 2. Alegem Datele și Epocile
-nume_folder = input("📁 Introdu numele folderului cu date (ex: Set_Extins): ")
+nume_folder = input("📁 Introdu numele folderului (ex: Set_Extins): ")
 cale_date = f"data/{nume_folder}"
-epoci_alese = int(input("⏳ Câte epoci vrei să ruleze? (ex: 5000): "))
+epoci_alese = int(input("⏳ Câte epoci vrei să ruleze? (Recomandat 15000 - 30000 pentru noapte): "))
 
-# 3. Configurare Hardware
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"\n🖥️ Folosim placa video/procesorul: {device}")
+print(f"\n🖥️ Folosim: {device}")
 
 dataset = SRDataset(cale_date)
 dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
 
-# 4. Setăm Modelul și Numele Salvării în funcție de alegere
 if alegere_model == "1":
     model = SRCNN().to(device)
     nume_salvare = "srcnn_model_antrenat.pth"
-    print("⚙️ AI configurat: SRCNN. Va scoate imagini la dimensiune 1:1.")
 else:
     model = ESPCN(scale_factor=3).to(device)
     nume_salvare = "espcn_model_antrenat.pth"
-    print("⚙️ AI configurat: ESPCN. Va mări imaginile de 3 ori (Pixel Shuffle).")
 
-criterion = nn.MSELoss()
+# TRUCUL 1: Folosim L1 Loss pentru margini mai clare, în loc de MSE
+criterion = nn.L1Loss()
+
+# TRUCUL 2: Setăm Optimizer-ul și un Scheduler pentru frânare treptată
 optimizer = optim.Adam(model.parameters(), lr=0.001)
+# Reduce viteza (LR) la jumătate (gamma=0.5) la fiecare 3000 de epoci
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=3000, gamma=0.5)
 
-# ==========================================
-# 5. BUCLA DE ANTRENAMENT
-# ==========================================
+# TRUCUL 3: Variabilă pentru a urmări recordul absolut
+cel_mai_bun_loss = float('inf')
+
 model.train()
-print(f"🚀 Pornim antrenamentul pe '{cale_date}' pentru {epoci_alese} epoci...")
+print(f"\n🚀 Start antrenament pe '{cale_date}'. Te poți duce la somn, modelul are grijă de el!")
 
 for epoch in range(epoci_alese):
     pierdere_totala = 0
@@ -54,17 +53,13 @@ for epoch in range(epoci_alese):
         input_lr = input_lr.to(device)
         target_hr = target_hr.to(device)
 
-        # --- Magia de adaptare automată a dimensiunilor ---
         if alegere_model == "1":
-            # SRCNN are nevoie ca intrarea și ieșirea să aibă ACEEAȘI dimensiune
             input_train = F.interpolate(input_lr, size=(256, 256), mode='bilinear', align_corners=False)
             target_train = F.interpolate(target_hr, size=(256, 256), mode='bilinear', align_corners=False)
         else:
-            # ESPCN are nevoie ca intrarea să fie de 3 ori MAI MICĂ
             input_train = F.interpolate(input_lr, size=(85, 85), mode='bilinear', align_corners=False)
             target_train = F.interpolate(target_hr, size=(255, 255), mode='bilinear', align_corners=False)
 
-        # Antrenarea propriu-zisă
         optimizer.zero_grad()
         output = model(input_train)
         loss = criterion(output, target_train)
@@ -73,11 +68,24 @@ for epoch in range(epoci_alese):
 
         pierdere_totala += loss.item()
 
-    if (epoch + 1) % 10 == 0 or (epoch + 1) == epoci_alese:
-        print(f"📈 Epoca [{epoch + 1}/{epoci_alese}] | Eroare (Loss): {pierdere_totala / len(dataloader):.6f}")
+    # Anunțăm scheduler-ul că a mai trecut o epocă
+    scheduler.step()
 
-# ==========================================
-# 6. SALVAREA "CREIERULUI"
-# ==========================================
-torch.save(model.state_dict(), nume_salvare)
-print(f"\n✅ Antrenament terminat cu succes! Fișierul '{nume_salvare}' a fost salvat și suprascris corect.")
+    pierdere_medie = pierdere_totala / len(dataloader)
+
+    # Afișăm în consolă progresul la fiecare 50 de epoci
+    if (epoch + 1) % 50 == 0:
+        viteza_curenta = scheduler.get_last_lr()[0]
+        print(
+            f"📈 Epoca [{epoch + 1}/{epoci_alese}] | Eroare (L1): {pierdere_medie:.6f} | Viteză LR: {viteza_curenta:.6f}")
+
+    # SALVAREA INTELIGENTĂ (Checkpointing)
+    if pierdere_medie < cel_mai_bun_loss:
+        cel_mai_bun_loss = pierdere_medie
+        torch.save(model.state_dict(), nume_salvare)
+        # Afișăm un mesaj discret doar din 100 în 100 de epoci pentru a nu face spam pe ecran,
+        # dar salvarea se face fizic la fiecare record.
+        if (epoch + 1) % 100 == 0:
+            print(f"   🌟 Nou record de claritate! Model salvat în siguranță.")
+
+print("\n✅ Antrenamentul de cursă lungă s-a terminat! Te așteaptă cel mai bun model posibil.")
