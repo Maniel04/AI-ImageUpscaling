@@ -20,7 +20,7 @@ criterion = nn.MSELoss()  # Funcția care măsoară diferența dintre poze
 optimizer = optim.Adam(model.parameters(), lr=0.001)  # lr = "viteza" de învățare
 
 # 4. Bucla de Antrenament
-epoci = 50  # De câte ori vede AI-ul TOATE pozele din folder
+epoci = 50  # De câte ori vede AI-ul TOATE pozele din folderr
 
 print("🚀 Începem antrenamentul...")
 for epoca in range(epoci):
