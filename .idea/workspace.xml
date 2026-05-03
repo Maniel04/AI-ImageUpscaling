@@ -4,9 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6366a971-8369-4dbf-9dfa-37eb89ba75d7" name="Changes" comment="Functioneaza tot dar nu arata wow">
+    <list default="true" id="6366a971-8369-4dbf-9dfa-37eb89ba75d7" name="Changes" comment="Am vazut rezultatele dupa 1000 de poze">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test_comparativ.py" beforeDir="false" afterPath="$PROJECT_DIR$/test_comparativ.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/train.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -126,7 +127,15 @@
       <option name="project" value="LOCAL" />
       <updated>1777761469156</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Am vazut rezultatele dupa 1000 de poze">
+      <option name="closed" value="true" />
+      <created>1777810529062</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1777810529062</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -136,6 +145,7 @@
     <MESSAGE value="Partea de seminar" />
     <MESSAGE value="Partea de seminar- varianta buna" />
     <MESSAGE value="Functioneaza tot dar nu arata wow" />
-    <option name="LAST_COMMIT_MESSAGE" value="Functioneaza tot dar nu arata wow" />
+    <MESSAGE value="Am vazut rezultatele dupa 1000 de poze" />
+    <option name="LAST_COMMIT_MESSAGE" value="Am vazut rezultatele dupa 1000 de poze" />
   </component>
 </project>
