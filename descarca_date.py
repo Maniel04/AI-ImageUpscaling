@@ -1,41 +1,59 @@
 import os
 import requests
+import concurrent.futures
+from tqdm import tqdm
 
+# ==========================================
+# SETĂRI PRINCIPALE
+# ==========================================
+NUMAR_TOTAL_POZE = 2500
+REZOLUTIE = 1920 # 1920x1920 este perfect pentru decupaje de 512x512
+FOLDER_DESTINATIE = "data/Set_SRGAN_2K"
+FIRE_DE_EXECUTIE = 16 # Câte poze să descarce simultan
 
-def descarca_poze(numar_poze=1000, folder_destinatie="data/Set_1000"):
-    # Creăm folderul dacă nu există
-    if not os.path.exists(folder_destinatie):
-        os.makedirs(folder_destinatie)
-        print(f"📁 Folderul '{folder_destinatie}' a fost creat.")
+def descarca_o_poza(index):
+    """Funcție care descarcă o singură imagine."""
+    url = f"https://picsum.photos/{REZOLUTIE}/{REZOLUTIE}?random={index}"
+    nume_fisier = os.path.join(FOLDER_DESTINATIE, f"imagine_{index}.jpg")
 
-    print(f"🚀 Începem descărcarea a {numar_poze} poze (rezoluție 960x960)...")
-    print("Așteaptă, procesul va dura câteva minute în funcție de viteza de internet.\n")
+    # Sistem de "Resume": Dacă poza există deja, trecem mai departe rapid
+    if os.path.exists(nume_fisier):
+        return True
 
-    # Descărcăm pozele pe rând
-    for i in range(1, numar_poze + 1):
-        # Folosim 960x960 - dimensiunea perfect divizibilă cu 3 pentru ESPCN
-        url = f"https://picsum.photos/960/960?random={i}"
+    try:
+        # Cerem poza (timeout de 15 secunde pentru a evita blocajele)
+        raspuns = requests.get(url, timeout=15)
+        raspuns.raise_for_status()
 
-        try:
-            # Cerem poza de pe internet
-            raspuns = requests.get(url, timeout=10)
-            raspuns.raise_for_status()
+        with open(nume_fisier, 'wb') as f:
+            f.write(raspuns.content)
+        return True
+    except Exception:
+        # Dacă pică internetul sau serverul dă eroare, ignorăm în liniște
+        return False
 
-            # O salvăm în folderul nostru
-            nume_fisier = os.path.join(folder_destinatie, f"imagine_{i}.jpg")
-            with open(nume_fisier, 'wb') as f:
-                f.write(raspuns.content)
+def porneste_descarcarea():
+    if not os.path.exists(FOLDER_DESTINATIE):
+        os.makedirs(FOLDER_DESTINATIE)
+        print(f"📁 Folder creat: '{FOLDER_DESTINATIE}'")
 
-            # Afișăm progresul din 50 în 50 de poze pentru a nu bloca terminalul
-            if i % 50 == 0 or i == numar_poze:
-                print(f"✅ Descărcate: {i} / {numar_poze} poze")
+    print(f"🚀 Începem descărcarea a {NUMAR_TOTAL_POZE} imagini la rezoluția {REZOLUTIE}x{REZOLUTIE}...")
+    print(f"⚡ Se folosesc {FIRE_DE_EXECUTIE} conexiuni paralele pentru viteză maximă.\n")
 
-        except Exception as e:
-            print(f"❌ Eroare la descărcarea pozei {i}: {e}")
+    poze_descarcate_cu_succes = 0
 
-    print("\n🎉 Gata! Baza ta de date uriașă este completă și pregătită pentru noaptea asta.")
+    # Folosim ThreadPoolExecutor pentru a descărca în paralel
+    with concurrent.futures.ThreadPoolExecutor(max_workers=FIRE_DE_EXECUTIE) as executor:
+        # Trimitem toate "comenzile" de descărcare către firele de execuție
+        viitoare = [executor.submit(descarca_o_poza, i) for i in range(1, NUMAR_TOTAL_POZE + 1)]
 
+        # tqdm afișează bara de progres actualizată în timp real
+        for viitor in tqdm(concurrent.futures.as_completed(viitoare), total=NUMAR_TOTAL_POZE, desc="📥 Progres Descărcare"):
+            if viitor.result(): # Dacă funcția a returnat True
+                poze_descarcate_cu_succes += 1
 
-# Pornim funcția
+    print(f"\n🎉 Proces finalizat! S-au asigurat {poze_descarcate_cu_succes} / {NUMAR_TOTAL_POZE} imagini.")
+    print("Sistemul tău este gata să hrănească placa RTX 5060 cu date de calitate!")
+
 if __name__ == "__main__":
-    descarca_poze()
+    porneste_descarcarea()
