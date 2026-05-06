@@ -10,7 +10,7 @@ from PIL import Image
 
 # ACTIVARE OPTIMIZARE CUDNN (Specific pentru NVIDIA)
 torch.backends.cudnn.benchmark = True
-# V2: Optimizare viteză pură pentru arhitectura Blackwell (RTX 5060)
+# V2/V3: Optimizare viteză pură pentru arhitectura Blackwell (RTX 5060)
 torch.backends.cudnn.allow_tf32 = True
 torch.backends.cuda.matmul.allow_tf32 = True
 
@@ -196,16 +196,16 @@ if __name__ == '__main__':
     nume_folder = input("Introdu numele folderului cu date (ex: Set_SRGAN_2K): ")
     numar_epoci = int(input("Introdu numarul de epoci: "))
 
-    # V2: Creăm un folder NOU pentru pozele de test, să nu le ștergem pe cele vechi
-    os.makedirs("poze_test_progres_V2", exist_ok=True)
+    # V3: Creăm un folder NOU pentru pozele de test de la faza de culori
+    os.makedirs("poze_test_progres_V3", exist_ok=True)
 
-    # V2: OPTIMIZARE DATALOADER (Setat perfect pentru Ryzen 5 5500)
+    # OPTIMIZARE DATALOADER (Setat perfect pentru Ryzen 5 5500)
     dataset = BazaDatePoze(f"data/{nume_folder}")
     dataloader = DataLoader(
         dataset,
         batch_size=8,
         shuffle=True,
-        num_workers=8,  # Thread-urile tale libere lucrează aici
+        num_workers=8,  # Thread-urile libere lucrează aici
         prefetch_factor=2,  # Memorează batch-uri în avans
         pin_memory=True
     )
@@ -219,10 +219,10 @@ if __name__ == '__main__':
     if alegere in ['1', '2']:
         if alegere == '1':
             model = SRCNN().to(device)
-            nume_fisier_salvare = "srcnn_model_antrenat_V2.pth"
+            nume_fisier_salvare = "srcnn_model_antrenat_V3.pth"
         else:
             model = ESPCN().to(device)
-            nume_fisier_salvare = "espcn_model_antrenat_V2.pth"
+            nume_fisier_salvare = "espcn_model_antrenat_V3.pth"
 
         model = torch.compile(model)
 
@@ -258,24 +258,35 @@ if __name__ == '__main__':
 
         # Modelele rulează în modul clasic (Eager Mode) stabil pe Windows
 
-        # V2: Am schimbat numele fișierelor ca să începem un antrenament curat
-        fisier_gen = "srgan_generator_V2.pth"
-        fisier_disc = "srgan_discriminator_V2.pth"
+        # Fisierele V2 (din care CITIM ce a învățat până acum)
+        fisier_gen_vechi = "srgan_generator_V2.pth"
+        fisier_disc_vechi = "srgan_discriminator_V2.pth"
 
+        # Fisierele V3 (în care SALVĂM de acum înainte, ca să protejăm V2)
+        fisier_gen = "srgan_generator_V3.pth"
+        fisier_disc = "srgan_discriminator_V3.pth"
+
+        # Logica inteligentă de încărcare:
         if os.path.exists(fisier_gen) and os.path.exists(fisier_disc):
+            # Dacă am început deja V3 și am oprit, continuăm V3
             generator.load_state_dict(torch.load(fisier_gen, map_location=device, weights_only=True))
             discriminator.load_state_dict(torch.load(fisier_disc, map_location=device, weights_only=True))
-            print("🔄 Progres GAN V2 găsit! Meciul continuă...")
+            print("🔄 Progres GAN V3 găsit! Continuăm saturarea culorilor...")
+        elif os.path.exists(fisier_gen_vechi) and os.path.exists(fisier_disc_vechi):
+            # Dacă V3 nu există, pornim de la baza V2
+            generator.load_state_dict(torch.load(fisier_gen_vechi, map_location=device, weights_only=True))
+            discriminator.load_state_dict(torch.load(fisier_disc_vechi, map_location=device, weights_only=True))
+            print("🔄 Model V2 încărcat cu succes! Începem etapa V3 (Color & Contrast Fix)...")
 
-        # V2: Cele 3 criterii (Adversarial, Textură și cel nou de Culori)
+        # V3: Cele 3 criterii (Adversarial, Textură și Culoare DRASTICĂ)
         criteriu_adversarial = nn.BCEWithLogitsLoss()
         criteriu_textura = nn.MSELoss()
-        criteriu_pixel = nn.L1Loss()  # NOU: Amenda pentru culori spălăcite
+        criteriu_pixel = nn.MSELoss()  # V3: Amenda DRASTICĂ (la pătrat) pentru culori spălăcite
 
         opt_G = torch.optim.Adam(generator.parameters(), lr=0.0001, betas=(0.9, 0.999))
         opt_D = torch.optim.Adam(discriminator.parameters(), lr=0.0001, betas=(0.9, 0.999))
 
-        # V2: Frânele (Learning Rate Schedulers) care încetinesc învățarea după 50 de epoci
+        # V3: Frânele (Learning Rate Schedulers)
         scheduler_G = torch.optim.lr_scheduler.StepLR(opt_G, step_size=50, gamma=0.5)
         scheduler_D = torch.optim.lr_scheduler.StepLR(opt_D, step_size=50, gamma=0.5)
 
@@ -310,35 +321,44 @@ if __name__ == '__main__':
                 # --- ANTRENAMENT GENERATOR ---
                 opt_G.zero_grad()
                 with torch.amp.autocast('cuda'):
+                    # 1. Calcul Adversarial
                     scor_fals_nou = discriminator(poze_generate)
                     loss_G_adversarial = criteriu_adversarial(scor_fals_nou, torch.ones_like(scor_fals_nou))
 
+                    # 2. Calcul Textură (VGG)
                     texturi_generate = extractor_vgg(poze_generate)
                     texturi_reale = extractor_vgg(imagini_clare).detach()
                     loss_G_textura = criteriu_textura(texturi_generate, texturi_reale)
 
-                    # V2: Calculăm eroarea de culoare/contrast pixel cu pixel
+                    # 3. Calcul Culoare Strictă (MSE în loc de L1 pentru penalizare la pătrat)
                     loss_G_pixel = criteriu_pixel(poze_generate, imagini_clare)
 
-                    # V2: Formula completă -> Textură + Adversarial + Culoare
-                    loss_G_total = loss_G_textura + 0.001 * loss_G_adversarial + 0.01 * loss_G_pixel
+                    # 4. Calcul Contrast și Luminozitate (Noutatea)
+                    loss_mean = torch.abs(poze_generate.mean() - imagini_clare.mean())
+                    loss_std = torch.abs(poze_generate.std() - imagini_clare.std())
+
+                    # 5. FORMULA FINALĂ COMPLETĂ (Aici se adună absolut tot)
+                    loss_G_total = (loss_G_textura +
+                                   0.001 * loss_G_adversarial +
+                                   0.1 * loss_G_pixel +
+                                   0.1 * loss_mean +
+                                   0.1 * loss_std)
 
                 scaler_G.scale(loss_G_total).backward()
                 scaler_G.step(opt_G)
                 scaler_G.update()
 
-            print(
-                f"Epoca [{epoch + 1}/{numar_epoci}] - Loss D: {loss_D.item():.4f} | Loss G: {loss_G_total.item():.4f}")
+            print(f"Epoca [{epoch + 1}/{numar_epoci}] - Loss D: {loss_D.item():.4f} | Loss G: {loss_G_total.item():.4f}")
 
-            # Salvăm modelele (sub noile nume V2)
+            # Salvăm modelele (sub noile nume V3)
             torch.save(generator.state_dict(), fisier_gen)
             torch.save(discriminator.state_dict(), fisier_disc)
 
-            # V2: Activăm noile frâne de viteză pentru optimizatori la final de epocă
+            # Activăm noile frâne de viteză pentru optimizatori la final de epocă
             scheduler_G.step()
             scheduler_D.step()
 
-            # BONUS: Salvarea unei poze de progres la final de epocă (în noul folder)
+            # BONUS: Salvarea unei poze de progres la final de epocă în noul folder V3
             generator.eval()
             with torch.no_grad():
                 test_lr = imagini_blurate[0:1]
@@ -348,5 +368,5 @@ if __name__ == '__main__':
                 test_lr_resized = torch.nn.functional.interpolate(test_lr, size=test_hr.shape[2:], mode='bicubic')
                 imagine_comparativa = torch.cat([test_lr_resized, test_gen, test_hr], dim=3)
 
-                save_image(imagine_comparativa, f"poze_test_progres_V2/epoca_{epoch + 1}.png")
+                save_image(imagine_comparativa, f"poze_test_progres_V3/epoca_{epoch + 1}.png")
             generator.train()
