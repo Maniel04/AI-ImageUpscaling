@@ -224,7 +224,7 @@ if __name__ == '__main__':
             model = ESPCN().to(device)
             nume_fisier_salvare = "espcn_model_antrenat_V3.pth"
 
-        model = torch.compile(model)
+        #model = torch.compile(model) // comentez astea cand antrenez srcnn si espcnn
 
         if os.path.exists(nume_fisier_salvare):
             model.load_state_dict(torch.load(nume_fisier_salvare, map_location=device, weights_only=True))

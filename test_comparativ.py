@@ -56,88 +56,105 @@ class GeneratorGAN(nn.Module):
         return (torch.tanh(out) + 1) / 2
 
 # ==========================================
-# 2. ÎNCĂRCĂM TOATE CELE 3 MODELE
+# 2. ÎNCĂRCĂM TOATE MODELELE (SRCNN, ESPCN + 3x SRGAN)
 # ==========================================
-# Încărcăm SRCNN
+# SRCNN & ESPCN
 model_srcnn = SRCNN().to(device)
-model_srcnn.load_state_dict(torch.load("srcnn_model_antrenat.pth", weights_only=True))
+model_srcnn.load_state_dict(torch.load("srcnn_model_antrenat_V3.pth", weights_only=True))
 model_srcnn.eval()
 
-# Încărcăm ESPCN
 model_espcn = ESPCN(scale_factor=3).to(device)
-model_espcn.load_state_dict(torch.load("espcn_model_antrenat.pth", weights_only=True))
+model_espcn.load_state_dict(torch.load("espcn_model_antrenat_V3.pth", weights_only=True))
 model_espcn.eval()
 
-# Încărcăm SRGAN
-model_srgan = GeneratorGAN(factor_marire=3).to(device)
-model_srgan.load_state_dict(torch.load("srgan_generator_antrenat.pth", weights_only=True))
-model_srgan.eval()
+# VARIANTĂ 1: SRGAN Antrenat pe 100 poze (Basic)
+model_srgan_v1 = GeneratorGAN(factor_marire=3).to(device)
+model_srgan_v1.load_state_dict(torch.load("srgan_generator_antrenat.pth", weights_only=True))
+model_srgan_v1.eval()
+
+# VARIANTĂ 2: SRGAN Antrenat pe 2000 poze (Basic)
+model_srgan_v2 = GeneratorGAN(factor_marire=3).to(device)
+model_srgan_v2.load_state_dict(torch.load("srgan_generator_V2.pth", weights_only=True))
+model_srgan_v2.eval()
+
+# VARIANTĂ 3: SRGAN Antrenat pe 2000 poze (Cu Filtru Culoare)
+model_srgan_v3 = GeneratorGAN(factor_marire=3).to(device)
+model_srgan_v3.load_state_dict(torch.load("srgan_generator_V3.pth", weights_only=True))
+model_srgan_v3.eval()
 
 # ==========================================
 # 3. PREGĂTIM IMAGINEA PENTRU REȚELE
 # ==========================================
-imagine_cale = 'data/Set5/img_002_SRF_2_HR.png'
+imagine_cale = 'data/Set5/babuin.png'
 try:
     imagine_hr = Image.open(imagine_cale).convert('RGB')
 except FileNotFoundError:
     print(f"⚠️ Nu am găsit imaginea la calea: {imagine_cale}")
     exit()
 
-# Ajustăm dimensiunea pentru a fi divizibilă cu 3 (cerința ESPCN și SRGAN)
 w, h = imagine_hr.size
 w, h = (w // 3) * 3, (h // 3) * 3
 imagine_hr = imagine_hr.resize((w, h), Image.BICUBIC)
 
-# Versiunea MICĂ (pentru intrarea în ESPCN și SRGAN)
 transform_low_res = transforms.Resize((h // 3, w // 3), Image.BICUBIC)
 imagine_lr_mica = transform_low_res(imagine_hr)
-
-# Versiunea MARE, dar blurată (pentru intrarea în SRCNN și afișare)
 imagine_lr_mare = imagine_lr_mica.resize((w, h), Image.BICUBIC)
 
-# Transformăm în numere pentru placa video
 tensor_mic = transforms.ToTensor()(imagine_lr_mica).unsqueeze(0).to(device)
 tensor_mare = transforms.ToTensor()(imagine_lr_mare).unsqueeze(0).to(device)
 
 # ==========================================
-# 4. TRECEM POZA PRIN CELE 3 REȚELE
+# 4. TRECEM POZA PRIN TOATE REȚELELE
 # ==========================================
 print("⏳ AI-urile procesează imaginea...")
 with torch.no_grad():
     output_srcnn = model_srcnn(tensor_mare)
     output_espcn = model_espcn(tensor_mic)
-    output_srgan = model_srgan(tensor_mic) # SRGAN primește tot poza mică
+    # Cele 3 variante de SRGAN
+    out_v1 = model_srgan_v1(tensor_mic)
+    out_v2 = model_srgan_v2(tensor_mic)
+    out_v3 = model_srgan_v3(tensor_mic)
 
 # Transformăm înapoi în poze
 poza_srcnn = transforms.ToPILImage()(output_srcnn.squeeze(0).cpu().clamp(0, 1))
 poza_espcn = transforms.ToPILImage()(output_espcn.squeeze(0).cpu().clamp(0, 1))
-poza_srgan = transforms.ToPILImage()(output_srgan.squeeze(0).cpu().clamp(0, 1))
+poza_v1 = transforms.ToPILImage()(out_v1.squeeze(0).cpu().clamp(0, 1))
+poza_v2 = transforms.ToPILImage()(out_v2.squeeze(0).cpu().clamp(0, 1))
+poza_v3 = transforms.ToPILImage()(out_v3.squeeze(0).cpu().clamp(0, 1))
 
 # ==========================================
-# 5. AFIȘĂM COMPARAȚIA FINALĂ (5 Coloane)
+# 5. AFIȘĂM COMPARAȚIA FINALĂ (7 Coloane)
 # ==========================================
-fig, ax = plt.subplots(1, 5, figsize=(24, 5))
+fig, ax = plt.subplots(1, 7, figsize=(30, 6))
 
 ax[0].imshow(imagine_lr_mare)
 ax[0].set_title("1. Input (Blurat)")
 ax[0].axis('off')
 
 ax[1].imshow(poza_srcnn)
-ax[1].set_title("2. SRCNN (Algoritm Vechi)")
+ax[1].set_title("2. SRCNN (V3)")
 ax[1].axis('off')
 
 ax[2].imshow(poza_espcn)
-ax[2].set_title("3. ESPCN (Algoritm Modern)")
+ax[2].set_title("3. ESPCN (V3)")
 ax[2].axis('off')
 
-ax[3].imshow(poza_srgan)
-ax[3].set_title("4. SRGAN (Realism/Texturi)")
+ax[3].imshow(poza_v1)
+ax[3].set_title("4. SRGAN (100 poze)")
 ax[3].axis('off')
 
-ax[4].imshow(imagine_hr)
-ax[4].set_title("5. Poza Originală (Ținta)")
+ax[4].imshow(poza_v2)
+ax[4].set_title("5. SRGAN (2000 poze)")
 ax[4].axis('off')
 
+ax[5].imshow(poza_v3)
+ax[5].set_title("6. SRGAN (+ Filtru)")
+ax[5].axis('off')
+
+ax[6].imshow(imagine_hr)
+ax[6].set_title("7. Poza Originală")
+ax[6].axis('off')
+
 plt.tight_layout()
-print("✅ Gata! Se deschide fereastra cu comparația extinsă.")
+print("✅ Gata! Vizualizează evoluția SRGAN în fereastra deschisă.")
 plt.show()
