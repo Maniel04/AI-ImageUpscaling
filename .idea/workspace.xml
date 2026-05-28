@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6d8d8738-9af9-4ec8-929d-aee6c9ae8fb1" name="Changes" comment="srgan cu tot cu contrast iese cam 95% bine mai poti pune detalii doar">
+    <list default="true" id="6d8d8738-9af9-4ec8-929d-aee6c9ae8fb1" name="Changes" comment="am adaugat in test comparativ 3 variante de SRGAN (100, 2000, 2000+filter) si cele basic">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/descarca_date.py" beforeDir="false" afterPath="$PROJECT_DIR$/descarca_date.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test_comparativ.py" beforeDir="false" afterPath="$PROJECT_DIR$/test_comparativ.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/train.py" afterDir="false" />
     </list>
@@ -16,7 +16,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="2825" />
+    <option name="cachedIndexableFilesCount" value="3747" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FileTemplateManagerImpl">
@@ -54,24 +54,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.descarca_date.executor": "Run",
-    "Python.test_comparativ.executor": "Run",
-    "Python.test_gpu.executor": "Run",
-    "Python.train.executor": "Run",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "master",
-    "junie.onboarding.icon.badge.shown": "true",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
-    "to.speed.mode.migration.done": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.descarca_date.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_comparativ.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_gpu.executor&quot;: &quot;Run&quot;,
+    &quot;Python.train.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/ProiectAI&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -103,12 +104,21 @@
       <option name="project" value="LOCAL" />
       <updated>1778081531901</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="am adaugat in test comparativ 3 variante de SRGAN (100, 2000, 2000+filter) si cele basic">
+      <option name="closed" value="true" />
+      <created>1778718338843</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1778718338843</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="merge srgan si face imagini frumoase mai trebe lucrat la contrast" />
     <MESSAGE value="srgan cu tot cu contrast iese cam 95% bine mai poti pune detalii doar" />
-    <option name="LAST_COMMIT_MESSAGE" value="srgan cu tot cu contrast iese cam 95% bine mai poti pune detalii doar" />
+    <MESSAGE value="am adaugat in test comparativ 3 variante de SRGAN (100, 2000, 2000+filter) si cele basic" />
+    <option name="LAST_COMMIT_MESSAGE" value="am adaugat in test comparativ 3 variante de SRGAN (100, 2000, 2000+filter) si cele basic" />
   </component>
 </project>

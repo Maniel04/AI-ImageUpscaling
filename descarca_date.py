@@ -1,59 +1,57 @@
 import os
 import requests
-import concurrent.futures
+import zipfile
 from tqdm import tqdm
 
 # ==========================================
-# SETĂRI PRINCIPALE
+# SETĂRI PRINCIPALE - DATASET OFICIAL SR
 # ==========================================
-NUMAR_TOTAL_POZE = 2500
-REZOLUTIE = 1920 # 1920x1920 este perfect pentru decupaje de 512x512
-FOLDER_DESTINATIE = "data/Set_SRGAN_2K"
-FIRE_DE_EXECUTIE = 16 # Câte poze să descarce simultan
+# Descărcăm setul DIV2K de antrenament (High Resolution - imagini 2K native)
+URL_DATASET = "http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_train_HR.zip"
+FOLDER_DATA = "data"
+FOLDER_DESTINATIE = os.path.join(FOLDER_DATA, "DIV2K_train_HR")
+FISIER_ZIP = os.path.join(FOLDER_DATA, "DIV2K_train_HR.zip")
 
-def descarca_o_poza(index):
-    """Funcție care descarcă o singură imagine."""
-    url = f"https://picsum.photos/{REZOLUTIE}/{REZOLUTIE}?random={index}"
-    nume_fisier = os.path.join(FOLDER_DESTINATIE, f"imagine_{index}.jpg")
-
-    # Sistem de "Resume": Dacă poza există deja, trecem mai departe rapid
-    if os.path.exists(nume_fisier):
-        return True
-
-    try:
-        # Cerem poza (timeout de 15 secunde pentru a evita blocajele)
-        raspuns = requests.get(url, timeout=15)
+def descarca_div2k():
+    """Descărcăm arhiva DIV2K dacă nu există deja."""
+    os.makedirs(FOLDER_DATA, exist_ok=True)
+    
+    if os.path.exists(FISIER_ZIP):
+        print(f"✅ Arhiva {FISIER_ZIP} există deja. Trecem direct la dezarhivare.")
+    else:
+        print(f"🚀 Începem descărcarea dataset-ului DIV2K (aprox. 3.5 GB)...")
+        # Folosim stream=True pentru a descărca fișierul mare în bucăți fără să umplem memoria RAM
+        raspuns = requests.get(URL_DATASET, stream=True)
         raspuns.raise_for_status()
+        
+        # Preluăm dimensiunea totală din headere pentru bara de progres
+        dimensiune_totala = int(raspuns.headers.get('content-length', 0))
+        
+        with open(FISIER_ZIP, 'wb') as f, tqdm(
+            desc="📥 Progres Descărcare",
+            total=dimensiune_totala,
+            unit='B',
+            unit_scale=True,
+            unit_divisor=1024,
+        ) as bar:
+            for chunk in raspuns.iter_content(chunk_size=8192):
+                if chunk: # Filtrăm bucățile goale (keep-alive)
+                    f.write(chunk)
+                    bar.update(len(chunk))
+                    
+    dezarhiveaza_dataset()
 
-        with open(nume_fisier, 'wb') as f:
-            f.write(raspuns.content)
-        return True
-    except Exception:
-        # Dacă pică internetul sau serverul dă eroare, ignorăm în liniște
-        return False
-
-def porneste_descarcarea():
-    if not os.path.exists(FOLDER_DESTINATIE):
-        os.makedirs(FOLDER_DESTINATIE)
-        print(f"📁 Folder creat: '{FOLDER_DESTINATIE}'")
-
-    print(f"🚀 Începem descărcarea a {NUMAR_TOTAL_POZE} imagini la rezoluția {REZOLUTIE}x{REZOLUTIE}...")
-    print(f"⚡ Se folosesc {FIRE_DE_EXECUTIE} conexiuni paralele pentru viteză maximă.\n")
-
-    poze_descarcate_cu_succes = 0
-
-    # Folosim ThreadPoolExecutor pentru a descărca în paralel
-    with concurrent.futures.ThreadPoolExecutor(max_workers=FIRE_DE_EXECUTIE) as executor:
-        # Trimitem toate "comenzile" de descărcare către firele de execuție
-        viitoare = [executor.submit(descarca_o_poza, i) for i in range(1, NUMAR_TOTAL_POZE + 1)]
-
-        # tqdm afișează bara de progres actualizată în timp real
-        for viitor in tqdm(concurrent.futures.as_completed(viitoare), total=NUMAR_TOTAL_POZE, desc="📥 Progres Descărcare"):
-            if viitor.result(): # Dacă funcția a returnat True
-                poze_descarcate_cu_succes += 1
-
-    print(f"\n🎉 Proces finalizat! S-au asigurat {poze_descarcate_cu_succes} / {NUMAR_TOTAL_POZE} imagini.")
-    print("Sistemul tău este gata să hrănească placa RTX 5060 cu date de calitate!")
+def dezarhiveaza_dataset():
+    """Extragem imaginile din arhiva ZIP."""
+    print(f"\n📦 Se extrag imaginile High-Res...")
+    
+    with zipfile.ZipFile(FISIER_ZIP, 'r') as arhiva:
+        fisiere = arhiva.namelist()
+        for fisier in tqdm(fisiere, desc="📂 Progres Dezarhivare"):
+            arhiva.extract(fisier, FOLDER_DATA)
+            
+    print(f"\n🎉 Proces finalizat! Imaginile de înaltă rezoluție se găsesc în '{FOLDER_DESTINATIE}'.")
+    print("Sistemul tău este gata să hrănească placa RTX 5060 cu date de calitate academică!")
 
 if __name__ == "__main__":
-    porneste_descarcarea()
+    descarca_div2k()

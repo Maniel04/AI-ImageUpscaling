@@ -85,7 +85,7 @@ model_srgan_v3.eval()
 # ==========================================
 # 3. PREGĂTIM IMAGINEA PENTRU REȚELE
 # ==========================================
-imagine_cale = 'data/Set5/babuin.png'
+imagine_cale = 'data/Set5/img_002_SRF_2_HR.png'
 try:
     imagine_hr = Image.open(imagine_cale).convert('RGB')
 except FileNotFoundError:
